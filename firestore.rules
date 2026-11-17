@@ -1,0 +1,235 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: deny all reads and writes by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidOperatorProfile(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 80 &&
+             data.badgeId is string && data.badgeId.size() >= 2 && data.badgeId.size() <= 32 &&
+             data.role in ['FIELD_OFFICER', 'EHS_SUPERVISOR', 'PLANT_MANAGER'] &&
+             data.facilityZone is string && data.facilityZone.size() >= 2 && data.facilityZone.size() <= 80 &&
+             data.email is string && data.email.size() <= 120 &&
+             data.accessActive is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidHazard(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.code is string && data.code.size() >= 3 && data.code.size() <= 32 &&
+             data.title is string && data.title.size() >= 3 && data.title.size() <= 140 &&
+             data.description is string && data.description.size() >= 1 && data.description.size() <= 1000 &&
+             data.category in ['NEAR_MISS', 'UNSAFE_CONDITION', 'UNSAFE_ACT', 'ENVIRONMENTAL'] &&
+             data.severity in ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] &&
+             data.status in ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'STOP_WORK'] &&
+             data.location is string && data.location.size() >= 2 && data.location.size() <= 120 &&
+             data.likelihood is int && data.likelihood >= 1 && data.likelihood <= 5 &&
+             data.impact is int && data.impact >= 1 && data.impact <= 5 &&
+             data.riskScore is int && data.riskScore >= 1 && data.riskScore <= 25 &&
+             data.riskScore == data.likelihood * data.impact &&
+             data.ppeChecklist is list && data.ppeChecklist.size() <= 10 &&
+             (data.ppeChecklist.size() == 0 || data.ppeChecklist[0] is string) &&
+             data.stopWorkIssued is bool &&
+             (!('evidenceUri' in data) || (data.evidenceUri is string && data.evidenceUri.size() <= 500)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidCapa(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.code is string && data.code.size() >= 3 && data.code.size() <= 32 &&
+             data.title is string && data.title.size() >= 3 && data.title.size() <= 140 &&
+             (!('linkedHazardCode' in data) || (data.linkedHazardCode is string && data.linkedHazardCode.size() <= 32)) &&
+             data.ownerName is string && data.ownerName.size() >= 2 && data.ownerName.size() <= 80 &&
+             data.dueDateLabel is string && data.dueDateLabel.size() >= 2 && data.dueDateLabel.size() <= 32 &&
+             data.priority in ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] &&
+             data.status in ['OPEN', 'IN_PROGRESS', 'VERIFICATION', 'CLOSED'] &&
+             data.currentStep is int && data.currentStep >= 0 && data.currentStep <= 3 &&
+             data.rootCauseSummary is string && data.rootCauseSummary.size() <= 600 &&
+             data.overdue is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidAudit(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.code is string && data.code.size() >= 3 && data.code.size() <= 32 &&
+             data.title is string && data.title.size() >= 3 && data.title.size() <= 140 &&
+             data.zone is string && data.zone.size() >= 2 && data.zone.size() <= 100 &&
+             data.inspectorName is string && data.inspectorName.size() >= 2 && data.inspectorName.size() <= 80 &&
+             data.status in ['PENDING', 'IN_PROGRESS', 'COMPLETED'] &&
+             data.passedCount is int && data.passedCount >= 0 && data.passedCount <= 20 &&
+             data.totalCount is int && data.totalCount >= 1 && data.totalCount <= 20 &&
+             data.passedCount <= data.totalCount &&
+             data.checklistLabels is list && data.checklistLabels.size() >= 1 && data.checklistLabels.size() <= 20 &&
+             data.checklistLabels[0] is string &&
+             data.checklistStates is list && data.checklistStates.size() == data.checklistLabels.size() &&
+             data.checklistStates[0] is string &&
+             data.notes is string && data.notes.size() <= 500 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'fullName', 'badgeId', 'role',
+                         'facilityZone', 'email', 'accessActive', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'fullName', 'badgeId', 'role',
+                         'facilityZone', 'email', 'accessActive', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidOperatorProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidOperatorProfile(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'fullName', 'badgeId', 'role', 'facilityZone', 'email', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+    }
+
+    match /users/{userId}/hazards/{hazardId} {
+      allow get: if isOwner(userId) && isValidId(hazardId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(hazardId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'code', 'title', 'description', 'category',
+                         'severity', 'status', 'location', 'likelihood', 'impact',
+                         'riskScore', 'ppeChecklist', 'stopWorkIssued', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'code', 'title', 'description', 'category',
+                         'severity', 'status', 'location', 'likelihood', 'impact',
+                         'riskScore', 'ppeChecklist', 'stopWorkIssued', 'evidenceUri',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidHazard(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(hazardId) &&
+                       isValidHazard(incoming(), userId) &&
+                       existing().status != 'RESOLVED' &&
+                       incoming().userId == existing().userId &&
+                       incoming().code == existing().code &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'stopWorkIssued', 'updatedAt']) ||
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'title', 'description', 'severity', 'status', 'location',
+                           'likelihood', 'impact', 'riskScore', 'ppeChecklist',
+                           'stopWorkIssued', 'evidenceUri', 'updatedAt'
+                         ])
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(hazardId);
+    }
+
+    match /users/{userId}/capas/{capaId} {
+      allow get: if isOwner(userId) && isValidId(capaId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(capaId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'code', 'title', 'ownerName', 'dueDateLabel',
+                         'priority', 'status', 'currentStep', 'rootCauseSummary',
+                         'overdue', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'code', 'title', 'linkedHazardCode', 'ownerName',
+                         'dueDateLabel', 'priority', 'status', 'currentStep',
+                         'rootCauseSummary', 'overdue', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidCapa(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(capaId) &&
+                       isValidCapa(incoming(), userId) &&
+                       existing().status != 'CLOSED' &&
+                       incoming().userId == existing().userId &&
+                       incoming().code == existing().code &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         (
+                           incoming().diff(existing()).affectedKeys().hasOnly(['currentStep', 'status', 'overdue', 'updatedAt']) &&
+                           incoming().currentStep >= existing().currentStep
+                         ) ||
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'title', 'ownerName', 'dueDateLabel', 'priority',
+                           'rootCauseSummary', 'overdue', 'updatedAt'
+                         ])
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(capaId);
+    }
+
+    match /users/{userId}/audits/{auditId} {
+      allow get: if isOwner(userId) && isValidId(auditId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(auditId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'code', 'title', 'zone', 'inspectorName',
+                         'status', 'passedCount', 'totalCount', 'checklistLabels',
+                         'checklistStates', 'notes', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'code', 'title', 'zone', 'inspectorName',
+                         'status', 'passedCount', 'totalCount', 'checklistLabels',
+                         'checklistStates', 'notes', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidAudit(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(auditId) &&
+                       isValidAudit(incoming(), userId) &&
+                       existing().status != 'COMPLETED' &&
+                       incoming().userId == existing().userId &&
+                       incoming().code == existing().code &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         incoming().diff(existing()).affectedKeys().hasOnly(['checklistStates', 'passedCount', 'status', 'updatedAt']) ||
+                         incoming().diff(existing()).affectedKeys().hasOnly(['notes', 'status', 'updatedAt'])
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(auditId);
+    }
+  }
+}

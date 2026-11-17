@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">SafeGram</string>
+    <string name="brand_title">SafeGram</string>
+    <string name="brand_subtitle">ENTERPRISE EHS COMMAND</string>
+    <string name="cd_safegram_shield">SafeGram Safety Shield</string>
+    <string name="auth_hero_headline">Zero-Friction Field Safety &amp; Compliance</string>
+    <string name="auth_hero_body">Log near misses, execute 5×5 risk matrix assessments, conduct lockout/tagout audits, and verify CAPA milestones under high-visibility industrial telemetry.</string>
+    <string name="auth_modules_label">OPERATIONAL MODULES</string>
+    <string name="auth_cap_risk_title">5×5 Risk Matrix &amp; Stop-Work</string>
+    <string name="auth_cap_risk_desc">Instant severity classification, PPE checklists, and photo evidence capture.</string>
+    <string name="auth_cap_audit_title">Field Inspection Clipboards</string>
+    <string name="auth_cap_audit_desc">One-tap PASS/FAIL checkpoints for LOTO, Hot Work, and Chemical Bunds.</string>
+    <string name="auth_cap_capa_title">CAPA Milestone Steppers</string>
+    <string name="auth_cap_capa_desc">Track root cause, action plan, implementation, and verification sign-off.</string>
+    <string name="auth_isolation_notice">Records are synced &amp; isolated to your verified corporate Google account.</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="auth_checking_session">Checking Field Session…</string>
+    <string name="auth_signing_in">Authenticating…</string>
+</resources>

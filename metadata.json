@@ -1,0 +1,6 @@
+{
+  "name": "SafeGram",
+  "description": "SafeGram Enterprise EHS — Industrial hazard reporting, 5x5 risk matrix assessment, safety audits, and CAPA milestone tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

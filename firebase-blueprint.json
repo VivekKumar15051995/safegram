@@ -1,0 +1,327 @@
+{
+  "entities": {
+    "OperatorProfile": {
+      "title": "OperatorProfile",
+      "description": "Authenticated safety officer access-control profile and facility role assignment.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID matching document ID."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Operator full display name."
+        },
+        "badgeId": {
+          "type": "string",
+          "description": "Employee or safety badge identifier (e.g., EHS-0412)."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["FIELD_OFFICER", "EHS_SUPERVISOR", "PLANT_MANAGER"]
+        },
+        "facilityZone": {
+          "type": "string",
+          "description": "Assigned plant or sector."
+        },
+        "email": {
+          "type": "string",
+          "description": "Verified Google account email (owner-isolated PII)."
+        },
+        "accessActive": {
+          "type": "boolean",
+          "description": "Whether operator access is active."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp()) on registration."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp()) on profile update."
+        }
+      },
+      "required": [
+        "userId",
+        "fullName",
+        "badgeId",
+        "role",
+        "facilityZone",
+        "email",
+        "accessActive",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "HazardReport": {
+      "title": "HazardReport",
+      "description": "Industrial EHS hazard, near-miss, unsafe condition, or stop-work report with 5x5 risk matrix scoring and PPE checklist.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID of the safety officer."
+        },
+        "code": {
+          "type": "string",
+          "description": "Human-readable hazard identifier code (e.g. NM-2026-089)."
+        },
+        "title": {
+          "type": "string",
+          "description": "Concise actionable hazard title."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed field observation narrative."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["NEAR_MISS", "UNSAFE_CONDITION", "UNSAFE_ACT", "ENVIRONMENTAL"]
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["OPEN", "IN_PROGRESS", "RESOLVED", "STOP_WORK"]
+        },
+        "location": {
+          "type": "string",
+          "description": "Facility sector, bay, or equipment tag location."
+        },
+        "likelihood": {
+          "type": "integer",
+          "description": "5x5 risk matrix likelihood index (1-5)."
+        },
+        "impact": {
+          "type": "integer",
+          "description": "5x5 risk matrix impact/consequence index (1-5)."
+        },
+        "riskScore": {
+          "type": "integer",
+          "description": "Computed 5x5 risk score (likelihood * impact, 1-25)."
+        },
+        "ppeChecklist": {
+          "type": "array",
+          "description": "Required PPE tags verified or missing at the scene (max 10)."
+        },
+        "stopWorkIssued": {
+          "type": "boolean",
+          "description": "Whether immediate Stop-Work Authority was triggered."
+        },
+        "evidenceUri": {
+          "type": "string",
+          "description": "Optional local or picker media URI reference for hazard evidence."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp()) when reported."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp()) of last update."
+        }
+      },
+      "required": [
+        "userId",
+        "code",
+        "title",
+        "description",
+        "category",
+        "severity",
+        "status",
+        "location",
+        "likelihood",
+        "impact",
+        "riskScore",
+        "ppeChecklist",
+        "stopWorkIssued",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CapaAction": {
+      "title": "CapaAction",
+      "description": "Corrective and Preventive Action (CAPA) record with 4-stage milestone stepper.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID of the safety officer."
+        },
+        "code": {
+          "type": "string",
+          "description": "CAPA identifier code (e.g. CAPA-2026-041)."
+        },
+        "title": {
+          "type": "string",
+          "description": "Actionable remediation title."
+        },
+        "linkedHazardCode": {
+          "type": "string",
+          "description": "Optional linked hazard report code."
+        },
+        "ownerName": {
+          "type": "string",
+          "description": "Responsible field engineer or supervisor."
+        },
+        "dueDateLabel": {
+          "type": "string",
+          "description": "Target compliance deadline label."
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["OPEN", "IN_PROGRESS", "VERIFICATION", "CLOSED"]
+        },
+        "currentStep": {
+          "type": "integer",
+          "description": "Current milestone index (0=Root Cause, 1=Action Plan, 2=Implemented, 3=Verified)."
+        },
+        "rootCauseSummary": {
+          "type": "string",
+          "description": "Summary of 5-Whys / root cause findings."
+        },
+        "overdue": {
+          "type": "boolean",
+          "description": "Whether the CAPA action is past target deadline."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp()) when created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp()) of last update."
+        }
+      },
+      "required": [
+        "userId",
+        "code",
+        "title",
+        "ownerName",
+        "dueDateLabel",
+        "priority",
+        "status",
+        "currentStep",
+        "rootCauseSummary",
+        "overdue",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SafetyAudit": {
+      "title": "SafetyAudit",
+      "description": "Field safety inspection clipboard with interactive PASS/FAIL/PENDING checklist items.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID of the safety inspector."
+        },
+        "code": {
+          "type": "string",
+          "description": "Audit code (e.g. AUD-2026-019)."
+        },
+        "title": {
+          "type": "string",
+          "description": "Inspection protocol title."
+        },
+        "zone": {
+          "type": "string",
+          "description": "Plant sector or compliance zone."
+        },
+        "inspectorName": {
+          "type": "string",
+          "description": "Lead inspector name."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "IN_PROGRESS", "COMPLETED"]
+        },
+        "passedCount": {
+          "type": "integer",
+          "description": "Count of passed checklist items."
+        },
+        "totalCount": {
+          "type": "integer",
+          "description": "Total checklist items."
+        },
+        "checklistLabels": {
+          "type": "array",
+          "description": "Ordered inspection checkpoint prompts (1-20)."
+        },
+        "checklistStates": {
+          "type": "array",
+          "description": "Parallel states (PASS, FAIL, PENDING) matching checklistLabels."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Inspector sign-off notes."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp()) when started."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp()) of last update."
+        }
+      },
+      "required": [
+        "userId",
+        "code",
+        "title",
+        "zone",
+        "inspectorName",
+        "status",
+        "passedCount",
+        "totalCount",
+        "checklistLabels",
+        "checklistStates",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/OperatorProfile"
+      },
+      "description": "Owner-isolated safety officer access control profile."
+    },
+    "/users/{userId}/hazards/{hazardId}": {
+      "schema": {
+        "$ref": "#/entities/HazardReport"
+      },
+      "description": "User-scoped EHS hazard and near-miss reports."
+    },
+    "/users/{userId}/capas/{capaId}": {
+      "schema": {
+        "$ref": "#/entities/CapaAction"
+      },
+      "description": "User-scoped Corrective and Preventive Action (CAPA) trackers."
+    },
+    "/users/{userId}/audits/{auditId}": {
+      "schema": {
+        "$ref": "#/entities/SafetyAudit"
+      },
+      "description": "User-scoped field safety inspection clipboards."
+    }
+  }
+}
